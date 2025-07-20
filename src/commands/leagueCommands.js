@@ -11,6 +11,10 @@ export const leagueCommands = [
     async execute(interaction) {
       try {
         const guild = interaction.guild;
+        
+        // Ensure we have all members cached
+        await guild.members.fetch();
+        
         const inactiveRole = guild.roles.cache.get(config.roles.inactive);
         const maddenRole = guild.roles.cache.get(config.roles.maddenLeague);
         const activeRole = guild.roles.cache.get(config.roles.active);
@@ -106,6 +110,10 @@ export const leagueCommands = [
     async execute(interaction) {
       try {
         const guild = interaction.guild;
+        
+        // Ensure we have all members cached
+        await guild.members.fetch();
+        
         const activeRole = guild.roles.cache.get(config.roles.active);
         const maddenRole = guild.roles.cache.get(config.roles.maddenLeague);
 
@@ -174,6 +182,10 @@ export const leagueCommands = [
     async execute(interaction) {
       try {
         const guild = interaction.guild;
+        
+        // Ensure we have all members cached
+        await guild.members.fetch();
+        
         const maddenRole = guild.roles.cache.get(config.roles.maddenLeague);
         const activeRole = guild.roles.cache.get(config.roles.active);
         const inactiveRole = guild.roles.cache.get(config.roles.inactive);
@@ -196,7 +208,8 @@ export const leagueCommands = [
         logger.info(`Checking for Madden League role ID: ${config.roles.maddenLeague}`);
         logger.info(`Madden League role found: ${maddenRole ? maddenRole.name : 'NOT FOUND'}`);
         logger.info(`Total guild members: ${guild.memberCount}`);
-        logger.info(`Non-bot guild members: ${guild.members.cache.filter(m => !m.user.bot).size}`);
+        logger.info(`Cached guild members: ${guild.members.cache.size}`);
+        logger.info(`Non-bot cached members: ${guild.members.cache.filter(m => !m.user.bot).size}`);
         logger.info(`League members found: ${leagueMembers.size}`);
         logger.info(`Active role: ${activeRole.name} (${activeRole.members.size} total members)`);
         
@@ -256,7 +269,7 @@ export const leagueCommands = [
             },
             {
               name: '✅ Active Members',
-              value: activeMembers.toString(),
+              value: activeMembersCount.toString(),
               inline: true
             },
             {
@@ -318,13 +331,11 @@ export const leagueCommands = [
 
         const guild = interaction.guild;
         
+        // Ensure we have all members cached
+        await guild.members.fetch();
+        
         // Debug: Check if guild members are cached
         logger.info(`Guild member cache size: ${guild.members.cache.size}`);
-        if (guild.members.cache.size === 0) {
-          logger.info('Member cache is empty, fetching members...');
-          await guild.members.fetch();
-          logger.info(`After fetch - Guild member cache size: ${guild.members.cache.size}`);
-        }
         
         const uptime = process.uptime();
         const uptimeString = `${Math.floor(uptime / 3600)}h ${Math.floor((uptime % 3600) / 60)}m ${Math.floor(uptime % 60)}s`;
