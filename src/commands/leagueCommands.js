@@ -13,17 +13,22 @@ export const leagueCommands = [
         const guild = interaction.guild;
         const inactiveRole = guild.roles.cache.get(config.roles.inactive);
         const maddenRole = guild.roles.cache.get(config.roles.maddenLeague);
+        const activeRole = guild.roles.cache.get(config.roles.active);
 
-        if (!inactiveRole || !maddenRole) {
+        if (!inactiveRole || !maddenRole || !activeRole) {
           return await interaction.reply({
             content: '❌ Required roles not found. Please check bot configuration.',
             ephemeral: true
           });
         }
 
+        // Debug logging
+        logger.info(`Checking roles - Madden: ${maddenRole.name}, Active: ${activeRole.name}, Inactive: ${inactiveRole.name}`);
+        
         const inactiveMembers = guild.members.cache.filter(member => 
           member.roles.cache.has(config.roles.maddenLeague) && 
-          member.roles.cache.has(config.roles.inactive)
+          member.roles.cache.has(config.roles.inactive) &&
+          !member.user.bot
         );
 
         // Also check for members with Madden role but no active/inactive role
@@ -37,11 +42,10 @@ export const leagueCommands = [
         const embed = new EmbedBuilder()
           .setColor(0xff6b35)
           .setTitle('📋 Inactive League Members')
-          .setDescription(
-            inactiveMembers.size === 0 && unassignedMembers.size === 0 ? 
+          .setDescription(`**Debug Info:**\n• Madden Role: ${maddenRole.name} (${maddenRole.members.size} members)\n• Active Role: ${activeRole.name} (${activeRole.members.size} members)\n• Inactive Role: ${inactiveRole.name} (${inactiveRole.members.size} members)\n\n` +
+            (inactiveMembers.size === 0 && unassignedMembers.size === 0 ? 
             '🎉 All league members are currently active!' : 
-            `Found ${inactiveMembers.size} inactive member(s) and ${unassignedMembers.size} unassigned member(s):`
-          )
+            `Found ${inactiveMembers.size} inactive member(s) and ${unassignedMembers.size} unassigned member(s):`))
           .setFooter({ 
             text: 'Gridiron Fantasy League Bot',
             iconURL: 'https://i.imgur.com/hU7ulOM.png'
@@ -181,12 +185,18 @@ export const leagueCommands = [
           !member.user.bot
         );
         const totalMembers = leagueMembers.size;
+        // Debug logging
+        logger.info(`League members found: ${leagueMembers.size}`);
+        logger.info(`Active role: ${activeRole.name} (${activeRole.members.size} total members)`);
+        
         
         // Filter league members by their activity roles
         const activeMembers = leagueMembers.filter(member => 
           member.roles.cache.has(config.roles.active)
         ).size;
         
+        logger.info(`Active league members: ${activeMembers.size}`);
+
         const inactiveMembers = leagueMembers.filter(member => 
           member.roles.cache.has(config.roles.inactive)
         ).size;
@@ -393,7 +403,7 @@ export const leagueCommands = [
         const embed = new EmbedBuilder()
           .setColor(0x10b981)
           .setTitle('✅ User Activated')
-          .setDescription(`${targetUser.username} has been marked as active.`)
+          .setDescription(`**Debug Info:**\n• Total League Members: ${leagueMembers.size}\n• Active Role Members: ${activeRole.members.size}\n• Active League Members: ${activeMembers.size}\n\nFound ${activeMembers.size} active member(s):`)
           .setFooter({ 
             text: `Action performed by ${interaction.user.username}`,
             iconURL: interaction.user.displayAvatarURL()
@@ -448,6 +458,11 @@ export const leagueCommands = [
 
         try {
           if (feedType === 'nfl' || feedType === 'both') {
+            if (!config.rss.nflUrl) {
+              throw new Error('NFL RSS URL not configured in environment variables');
+            }
+            
+            logger.info(`Testing NFL RSS feed: ${config.rss.nflUrl}`);
             const nflFeed = await parser.parseURL(config.rss.nflUrl);
             
             const latestNfl = nflFeed.items[0];
@@ -491,6 +506,11 @@ export const leagueCommands = [
           }
 
           if (feedType === 'madden' || feedType === 'both') {
+            if (!config.rss.maddenUrl) {
+              throw new Error('Madden RSS URL not configured in environment variables');
+            }
+            
+            logger.info(`Testing Madden RSS feed: ${config.rss.maddenUrl}`);
             const maddenFeed = await parser.parseURL(config.rss.maddenUrl);
             
             const latestMadden = maddenFeed.items[0];

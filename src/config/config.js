@@ -25,8 +25,8 @@ export const config = {
     inactiveHours: parseInt(process.env.INACTIVE_HOURS) || 26
   },
   rss: {
-    nflUrl: process.env.NFL_RSS_URL,
-    maddenUrl: process.env.MADDEN_RSS_URL
+    nflUrl: process.env.NFL_RSS_URL || 'https://rss.app/feeds/5xIPyiPZ71AlfDvW.xml',
+    maddenUrl: process.env.MADDEN_RSS_URL || 'https://rss.app/feeds/mvkeMDgV7nuurHWH.xml'
   },
   welcome: {
     embedsEnabled: process.env.WELCOME_EMBEDS_ENABLED === 'true' // ONLY affects welcome messages, not other bot embeds
