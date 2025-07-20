@@ -23,7 +23,9 @@ export const leagueCommands = [
         }
 
         // Debug logging
-        logger.info(`Checking roles - Madden: ${maddenRole.name}, Active: ${activeRole.name}, Inactive: ${inactiveRole.name}`);
+        logger.info(`Checking roles - Madden: ${maddenRole ? maddenRole.name : 'NOT FOUND'}, Active: ${activeRole ? activeRole.name : 'NOT FOUND'}, Inactive: ${inactiveRole ? inactiveRole.name : 'NOT FOUND'}`);
+        logger.info(`Role IDs from config - Madden: ${config.roles.maddenLeague}, Active: ${config.roles.active}, Inactive: ${config.roles.inactive}`);
+        logger.info(`Total guild members: ${guild.memberCount}, Non-bot members: ${guild.members.cache.filter(m => !m.user.bot).size}`);
         
         const inactiveMembers = guild.members.cache.filter(member => 
           member.roles.cache.has(config.roles.maddenLeague) && 
@@ -39,10 +41,12 @@ export const leagueCommands = [
           !member.user.bot
         );
 
+        logger.info(`Found ${inactiveMembers.size} inactive members and ${unassignedMembers.size} unassigned members`);
+
         const embed = new EmbedBuilder()
           .setColor(0xff6b35)
           .setTitle('📋 Inactive League Members')
-          .setDescription(`**Debug Info:**\n• Madden Role: ${maddenRole.name} (${maddenRole.members.size} members)\n• Active Role: ${activeRole.name} (${activeRole.members.size} members)\n• Inactive Role: ${inactiveRole.name} (${inactiveRole.members.size} members)\n\n` +
+          .setDescription(`**Debug Info:**\n• Madden Role: ${maddenRole ? maddenRole.name : 'NOT FOUND'} (${maddenRole ? maddenRole.members.size : 0} members)\n• Active Role: ${activeRole ? activeRole.name : 'NOT FOUND'} (${activeRole ? activeRole.members.size : 0} members)\n• Inactive Role: ${inactiveRole ? inactiveRole.name : 'NOT FOUND'} (${inactiveRole ? inactiveRole.members.size : 0} members)\n\n` +
             (inactiveMembers.size === 0 && unassignedMembers.size === 0 ? 
             '🎉 All league members are currently active!' : 
             `Found ${inactiveMembers.size} inactive member(s) and ${unassignedMembers.size} unassigned member(s):`))
@@ -121,11 +125,13 @@ export const leagueCommands = [
         const activeMembers = leagueMembers.filter(member => 
           member.roles.cache.has(config.roles.active)
         );
+        
+        logger.info(`Found ${activeMembers.size} active members out of ${leagueMembers.size} total league members`);
 
         const embed = new EmbedBuilder()
           .setColor(0x10b981)
           .setTitle('✅ Active League Members')
-          .setDescription(`Found ${activeMembers.size} active member(s):`)
+          .setDescription(`**Debug Info:**\n• Madden Role: ${maddenRole ? maddenRole.name : 'NOT FOUND'} (${maddenRole ? maddenRole.members.size : 0} members)\n• Active Role: ${activeRole ? activeRole.name : 'NOT FOUND'} (${activeRole ? activeRole.members.size : 0} members)\n\nFound ${activeMembers.size} active member(s):`)
           .setFooter({ 
             text: 'Gridiron Fantasy League Bot',
             iconURL: 'https://i.imgur.com/hU7ulOM.png'
@@ -185,17 +191,22 @@ export const leagueCommands = [
           !member.user.bot
         );
         const totalMembers = leagueMembers.size;
-        // Debug logging
+        
+        // Debug logging with role ID verification
+        logger.info(`Checking for Madden League role ID: ${config.roles.maddenLeague}`);
+        logger.info(`Madden League role found: ${maddenRole ? maddenRole.name : 'NOT FOUND'}`);
+        logger.info(`Total guild members: ${guild.memberCount}`);
+        logger.info(`Non-bot guild members: ${guild.members.cache.filter(m => !m.user.bot).size}`);
         logger.info(`League members found: ${leagueMembers.size}`);
         logger.info(`Active role: ${activeRole.name} (${activeRole.members.size} total members)`);
-        
         
         // Filter league members by their activity roles
         const activeMembers = leagueMembers.filter(member => 
           member.roles.cache.has(config.roles.active)
-        ).size;
+        );
+        const activeMembersCount = activeMembers.size;
         
-        logger.info(`Active league members: ${activeMembers.size}`);
+        logger.info(`Active league members: ${activeMembersCount}`);
 
         const inactiveMembers = leagueMembers.filter(member => 
           member.roles.cache.has(config.roles.inactive)
@@ -206,7 +217,7 @@ export const leagueCommands = [
           !member.roles.cache.has(config.roles.inactive)
         ).size;
         
-        const activityRate = totalMembers > 0 ? Math.round((activeMembers / totalMembers) * 100) : 0;
+        const activityRate = totalMembers > 0 ? Math.round((activeMembersCount / totalMembers) * 100) : 0;
 
         // Additional Discord stats
         const totalServerMembers = guild.memberCount;
@@ -306,8 +317,23 @@ export const leagueCommands = [
         }
 
         const guild = interaction.guild;
+        
+        // Debug: Check if guild members are cached
+        logger.info(`Guild member cache size: ${guild.members.cache.size}`);
+        if (guild.members.cache.size === 0) {
+          logger.info('Member cache is empty, fetching members...');
+          await guild.members.fetch();
+          logger.info(`After fetch - Guild member cache size: ${guild.members.cache.size}`);
+        }
+        
         const uptime = process.uptime();
         const uptimeString = `${Math.floor(uptime / 3600)}h ${Math.floor((uptime % 3600) / 60)}m ${Math.floor(uptime % 60)}s`;
+        
+        const leagueMembers = guild.members.cache.filter(m => 
+          m.roles.cache.has(config.roles.maddenLeague) && !m.user.bot
+        );
+        
+        logger.info(`Bot-info command - League members found: ${leagueMembers.size}`);
 
         const embed = new EmbedBuilder()
           .setColor(0x1e40af)
@@ -326,7 +352,7 @@ export const leagueCommands = [
             },
             {
               name: '👥 Members Monitored',
-              value: guild.members.cache.filter(m => m.roles.cache.has(config.roles.maddenLeague)).size.toString(),
+              value: leagueMembers.size.toString(),
               inline: true
             },
             {
