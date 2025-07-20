@@ -49,6 +49,8 @@ export const leagueCommands = [
           .setTimestamp();
 
         if (inactiveMembers.size > 0) {
+          const memberList = inactiveMembers
+            .map(member => `• **${member.user.username}** (${member.user.tag})`)
             .join('\n');
 
           embed.addFields({
@@ -97,6 +99,7 @@ export const leagueCommands = [
       try {
         const guild = interaction.guild;
         const activeRole = guild.roles.cache.get(config.roles.active);
+        const maddenRole = guild.roles.cache.get(config.roles.maddenLeague);
 
         if (!maddenRole || !activeRole) {
           return await interaction.reply({
@@ -126,6 +129,8 @@ export const leagueCommands = [
           .setTimestamp();
 
         if (activeMembers.size > 0) {
+          const memberList = activeMembers
+            .map(member => `• **${member.user.username}** (${member.user.tag})`)
             .join('\n');
 
           embed.addFields({
@@ -190,21 +195,49 @@ export const leagueCommands = [
 
         // Get all league members first
         const leagueMembers = guild.members.cache.filter(member => 
-        const activityRate = totalMembers > 0 ? Math.round((activeMembers / totalMembers) * 100) : 0;
-
           member.roles.cache.has(config.roles.maddenLeague) && 
           !member.user.bot
         );
         const totalMembers = leagueMembers.size;
+        
+        // Filter league members by their activity roles
+        const activeMembers = leagueMembers.filter(member => 
+        const activityRate = totalMembers > 0 ? Math.round((activeMembers / totalMembers) * 100) : 0;
+
+        // Additional Discord stats
+        const totalServerMembers = guild.memberCount;
+        const onlineMembers = guild.members.cache.filter(member => 
+          member.presence?.status === 'online' && !member.user.bot
+        ).size;
+        const serverBoosts = guild.premiumSubscriptionCount || 0;
+        const serverLevel = guild.premiumTier;
+        const channelCount = guild.channels.cache.size;
+        const roleCount = guild.roles.cache.size;
+        const emojiCount = guild.emojis.cache.size;
+        
+        // Voice channel stats
+        const voiceChannels = guild.channels.cache.filter(channel => channel.type === 2);
+        const membersInVoice = voiceChannels.reduce((total, channel) => total + channel.members.size, 0);
+        
+        // Recent activity (last 7 days)
+        const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+        const recentJoins = guild.members.cache.filter(member => 
+          member.joinedTimestamp > sevenDaysAgo && !member.user.bot
+        ).size;
+
+        // Bot uptime
+        const uptime = process.uptime();
+        const uptimeString = `${Math.floor(uptime / 3600)}h ${Math.floor((uptime % 3600) / 60)}m ${Math.floor(uptime % 60)}s`;
+
+        const embed = new EmbedBuilder()
+          .setColor(0x1e40af)
+          member.roles.cache.has(config.roles.maddenLeague) && 
+          !member.user.bot
+        );
+        
+        const inactiveMembers = leagueMembers.filter(member => 
           .setTitle('📊 League Statistics')
           .setDescription('Current league member activity overview')
-          .addFields(
-            {
-              name: '💾 Data Persistence',
-              value: 'Activity data is automatically saved and restored on bot restart',
-              inline: false
-            }
-          )
           .addFields(
             {
               name: '👥 Total League Members',
@@ -212,37 +245,38 @@ export const leagueCommands = [
               inline: true
             },
             {
-              name: '🚀 Server Boosts',
-              value: `**Boost Count:** ${serverBoosts}\n**Boost Level:** ${serverLevel}/3`,
+              name: '✅ Active Members',
+              value: activeMembers.toString(),
               inline: true
             },
             {
-              name: '📁 Server Content',
-              value: `**Channels:** ${channelCount}\n**Roles:** ${roleCount}\n**Emojis:** ${emojiCount}`,
+              name: '😴 Inactive Members',
+              value: inactiveMembers.toString(),
               inline: true
-            }
-          )
-          .addFields(
-            {
-              name: '💾 Bot Features',
-              value: '✅ Persistent Data Storage\n✅ Activity Tracking\n✅ Welcome System\n✅ News Feeds\n✅ Role Management',
-              inline: false
             },
             {
-              name: '📈 League Health Analysis',
-              value: activityRate >= 80 ? 
-                '🟢 **Excellent** - League is very active and engaged!' :
-                activityRate >= 60 ? 
-                '🟡 **Good** - League has solid activity levels' :
-                activityRate >= 40 ? 
-                '🟠 **Fair** - Consider engagement activities' :
-                '🔴 **Needs Attention** - Low activity detected',
+              name: '❓ Unassigned Members',
+              value: unassignedMembers.toString(),
+              inline: true
+            },
+            {
+              name: '📊 Activity Rate',
+              value: `${activityRate}%`,
+              inline: true
+            },
+            {
+              name: '⏰ Activity Threshold',
+              value: `${config.activity.inactiveHours} hours`,
+              inline: true
+            },
+            {
+              name: '💾 Data Persistence',
+              value: 'Activity data is automatically saved and restored on bot restart',
               inline: false
             }
           )
-          .setThumbnail(guild.iconURL({ dynamic: true }))
           .setFooter({ 
-            text: `Gridiron Fantasy League Bot | Server ID: ${guild.id}`,
+            text: 'Gridiron Fantasy League Bot',
             iconURL: 'https://i.imgur.com/hU7ulOM.png'
           })
           .setTimestamp();
@@ -257,20 +291,46 @@ export const leagueCommands = [
       }
     }
   },
-            },
+
+  {
+    data: new SlashCommandBuilder()
+      .setName('bot-info')
+      .setDescription('Show bot information and status'),
+    async execute(interaction) {
+      try {
+        // Check if user has admin permissions
+        if (!interaction.member.permissions.has('Administrator')) {
+        const guild = interaction.guild;
+        const uptime = process.uptime();
+        const uptimeString = `${Math.floor(uptime / 3600)}h ${Math.floor((uptime % 3600) / 60)}m ${Math.floor(uptime % 60)}s`;
+
+        const embed = new EmbedBuilder()
+          .setColor(0x1e40af)
+          .setTitle('🤖 Bot Information')
+          .setDescription('Gridiron Fantasy League Discord Bot Status')
+          .addFields(
             {
-              name: '⏰ Activity Threshold',
-              value: `${config.activity.inactiveHours} hours`,
+              name: '⏱️ Uptime',
+              value: uptimeString,
               inline: true
             },
             {
-              name: '🏈 League Health',
-              value: activityRate >= 80 ? '🟢 Excellent' : 
-                     activityRate >= 60 ? '🟡 Good' : 
-                     activityRate >= 40 ? '🟠 Fair' : '🔴 Needs Attention',
+              name: '📊 Server',
+              value: guild.name,
               inline: true
+            },
+            {
+              name: '👥 Members Monitored',
+              value: guild.members.cache.filter(m => m.roles.cache.has(config.roles.maddenLeague)).size.toString(),
+              inline: true
+            },
+            {
+              name: '🔧 Features',
+              value: '• Activity Tracking\n• Welcome System\n• News Feeds\n• Role Management\n• League Statistics',
+              inline: false
             }
           )
+          .setThumbnail('https://i.imgur.com/hU7ulOM.png')
           .setFooter({ 
             text: 'Gridiron Fantasy League Bot',
             iconURL: 'https://i.imgur.com/hU7ulOM.png'
@@ -279,9 +339,9 @@ export const leagueCommands = [
 
         await interaction.reply({ embeds: [embed] });
       } catch (error) {
-        logger.error('Error in league-stats command:', error);
+        logger.error('Error in bot-info command:', error);
         await interaction.reply({
-          content: '❌ An error occurred while fetching league statistics.',
+          content: '❌ An error occurred while fetching bot information.',
           ephemeral: true
         });
       }
@@ -311,6 +371,8 @@ export const leagueCommands = [
         const targetMember = interaction.guild.members.cache.get(targetUser.id);
 
         if (!targetMember) {
+          return await interaction.reply({
+            content: '❌ User not found in this server.',
             ephemeral: true
           });
         }
@@ -501,101 +563,6 @@ export const leagueCommands = [
         logger.error('Error in test-rss command:', error);
         await interaction.followUp({
           content: '❌ An error occurred while testing RSS feeds.',
-          ephemeral: true
-        });
-      }
-    }
-  },
-        // Filter league members by their activity roles
-        const activeMembers = leagueMembers.filter(member => 
-          member.roles.cache.has(config.roles.active)
-        ).size;
-        const leagueMembers = guild.members.cache.filter(member => 
-        const inactiveMembers = leagueMembers.filter(member => 
-          member.roles.cache.has(config.roles.inactive)
-        ).size;
-          member.roles.cache.has(config.roles.inactive)
-        const unassignedMembers = leagueMembers.filter(member => 
-          !member.roles.cache.has(config.roles.active) && 
-          !member.roles.cache.has(config.roles.inactive)
-        ).size;
-
-        // Additional Discord stats
-        const totalServerMembers = guild.memberCount;
-        const onlineMembers = guild.members.cache.filter(member => 
-          member.presence?.status === 'online' && !member.user.bot
-        ).size;
-        const serverBoosts = guild.premiumSubscriptionCount || 0;
-        const serverLevel = guild.premiumTier;
-        const channelCount = guild.channels.cache.size;
-        const roleCount = guild.roles.cache.size;
-        const emojiCount = guild.emojis.cache.size;
-        
-        // Voice channel stats
-        const voiceChannels = guild.channels.cache.filter(channel => channel.type === 2);
-        const membersInVoice = voiceChannels.reduce((total, channel) => total + channel.members.size, 0);
-        
-        // Recent activity (last 7 days)
-        const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
-        const recentJoins = guild.members.cache.filter(member => 
-          member.joinedTimestamp > sevenDaysAgo && !member.user.bot
-        ).size;
-
-        const uptimeString = `${Math.floor(uptime / 3600)}h ${Math.floor((uptime % 3600) / 60)}m ${Math.floor(uptime % 60)}s`;
-
-        const embed = new EmbedBuilder()
-          .setColor(0x1e40af)
-          .setTitle('📊 Comprehensive League & Server Statistics')
-          .setDescription(`**${guild.name}** - Complete overview of league and server activity`)
-          .addFields(
-            {
-              name: '⏱️ Uptime',
-              value: uptimeString,
-              inline: true
-            },
-            {
-              name: '📊 Server',
-              value: guild.name,
-              inline: true
-            },
-            {
-              name: '👥 Members Monitored',
-              value: guild.members.cache.filter(m => m.roles.cache.has(config.roles.maddenLeague)).size.toString(),
-              inline: true
-            },
-            {
-              name: '🔧 Features',
-              value: '• Activity Tracking\n• Welcome System\n• News Feeds\n• Role Management\n• League Statistics',
-              inline: false
-            },
-            {
-              name: '🏈 League Member Breakdown',
-              value: `**Total League Members:** ${totalMembers}\n**Active:** ${activeMembers}\n**Inactive:** ${inactiveMembers}\n**Unassigned:** ${unassignedMembers}`,
-              inline: true
-            },
-            {
-              name: '🌐 Server Overview',
-              value: `**Total Members:** ${totalServerMembers}\n**Online Now:** ${onlineMembers}\n**Recent Joins (7d):** ${recentJoins}\n**Server Level:** ${serverLevel}`,
-              inline: true
-            },
-            {
-              name: '🎯 Activity Metrics',
-              value: `**Activity Rate:** ${activityRate}%\n**Threshold:** ${config.activity.inactiveHours}h\n**Health:** ${activityRate >= 80 ? '🟢 Excellent' : activityRate >= 60 ? '🟡 Good' : activityRate >= 40 ? '🟠 Fair' : '🔴 Needs Attention'}`,
-              inline: false
-            }
-          )
-          .setThumbnail('https://i.imgur.com/hU7ulOM.png')
-          .setFooter({ 
-              name: '🎮 Voice Activity',
-              value: `**Voice Channels:** ${voiceChannels.size}\n**Members in Voice:** ${membersInVoice}`,
-          })
-          .setTimestamp();
-
-        await interaction.reply({ embeds: [embed] });
-      } catch (error) {
-        logger.error('Error in bot-info command:', error);
-        await interaction.reply({
-          content: '❌ An error occurred while fetching bot information.',
           ephemeral: true
         });
       }
