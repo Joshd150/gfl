@@ -175,24 +175,6 @@ export const leagueCommands = [
           });
         }
 
-        if (!maddenRole || !inactiveRole) {
-        ).size;
-
-        const activeMembers = guild.members.cache.filter(member => 
-            content: '❌ You need Administrator permissions to use this command.',
-            ephemeral: true
-          });
-        }
-
-          });
-        }
-
-          });
-        }
-
-          });
-        }
-
         // Get all league members first
         const leagueMembers = guild.members.cache.filter(member => 
           member.roles.cache.has(config.roles.maddenLeague) && 
@@ -202,6 +184,18 @@ export const leagueCommands = [
         
         // Filter league members by their activity roles
         const activeMembers = leagueMembers.filter(member => 
+          member.roles.cache.has(config.roles.active)
+        ).size;
+        
+        const inactiveMembers = leagueMembers.filter(member => 
+          member.roles.cache.has(config.roles.inactive)
+        ).size;
+
+        const unassignedMembers = leagueMembers.filter(member => 
+          !member.roles.cache.has(config.roles.active) && 
+          !member.roles.cache.has(config.roles.inactive)
+        ).size;
+        
         const activityRate = totalMembers > 0 ? Math.round((activeMembers / totalMembers) * 100) : 0;
 
         // Additional Discord stats
@@ -231,11 +225,6 @@ export const leagueCommands = [
 
         const embed = new EmbedBuilder()
           .setColor(0x1e40af)
-          member.roles.cache.has(config.roles.maddenLeague) && 
-          !member.user.bot
-        );
-        
-        const inactiveMembers = leagueMembers.filter(member => 
           .setTitle('📊 League Statistics')
           .setDescription('Current league member activity overview')
           .addFields(
@@ -300,6 +289,12 @@ export const leagueCommands = [
       try {
         // Check if user has admin permissions
         if (!interaction.member.permissions.has('Administrator')) {
+          return await interaction.reply({
+            content: '❌ You need Administrator permissions to use this command.',
+            ephemeral: true
+          });
+        }
+
         const guild = interaction.guild;
         const uptime = process.uptime();
         const uptimeString = `${Math.floor(uptime / 3600)}h ${Math.floor((uptime % 3600) / 60)}m ${Math.floor(uptime % 60)}s`;
